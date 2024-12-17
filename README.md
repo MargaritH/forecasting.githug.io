@@ -1,1 +1,1 @@
-# forecasting.githug.io
+# https://margarith.github.io/forecasting/
