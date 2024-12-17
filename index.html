@@ -9,61 +9,112 @@
         body {
             font-family: Arial, sans-serif;
         }
-        .crypto-section {
-            margin-top: 50px;
+        .content-container {
+            display: flex;
+            flex-wrap: wrap;
+            height: 100vh;
+        }
+        .left-section {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            border-right: 1px solid #ddd;
+        }
+        .right-section {
+            flex: 2;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .hero-section {
+            margin-bottom: 20px;
+        }
+        .article {
+            margin-bottom: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
 <body>
 
-    <header class="hero-section text-center p-5 bg-primary text-white">
-        <h1>Crypto Price Tracker</h1>
-        <p>Select an exchange and trading pair to view real-time updates.</p>
-    </header>
-
-    <section id="crypto-tracker" class="crypto-section container">
-        <h2 class="text-center">Track Prices</h2>
-        <div class="row">
-            <div class="col-md-6 mx-auto">
-                <form id="crypto-form">
-                    <div class="mb-3">
-                        <label for="exchange" class="form-label">Select Exchange</label>
-                        <select id="exchange" class="form-select">
-                            <option value="binance">Binance</option>
-                            <option value="kraken">Kraken</option>
-                            <option value="bitfinex">Bitfinex</option>
-                            <option value="okx">OKX</option>
-                            <option value="kucoin">KuCoin</option>
-                            <option value="gateio">Gate.io</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="trading-pair" class="form-label">Trading Pair (e.g., BTC/USDT)</label>
-                        <input type="text" class="form-control" id="trading-pair" placeholder="BTC/USDT" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">Add to Table</button>
-                </form>
+    <div class="content-container">
+        <!-- Left Section: Articles -->
+        <section class="left-section">
+            <header class="hero-section text-center bg-dark text-white p-3">
+                <h2>Trading Strategies</h2>
+                <p>Learn tips and strategies for better trading.</p>
+            </header>
+            <div id="articles">
+                <div class="article">
+                    <h3>Strategy 1: RSI and Moving Averages</h3>
+                    <p>The RSI indicator combined with moving averages can help identify overbought or oversold conditions...</p>
+                </div>
+                <div class="article">
+                    <h3>Strategy 2: Using Fibonacci Retracement</h3>
+                    <p>Fibonacci retracement levels are useful for identifying potential reversal levels...</p>
+                </div>
+                <div class="article">
+                    <h3>Strategy 3: Trend Following with MACD</h3>
+                    <p>The MACD is a momentum indicator that helps traders follow trends and spot reversals...</p>
+                </div>
             </div>
-        </div>
+        </section>
 
-        <div class="mt-5">
-            <h3 class="text-center">Price Updates</h3>
-            <table class="table table-bordered text-center">
-                <thead>
-                    <tr>
-                        <th>Exchange</th>
-                        <th>Trading Pair</th>
-                        <th>Bid</th>
-                        <th>Ask</th>
-                        <th>Last Updated</th>
-                    </tr>
-                </thead>
-                <tbody id="price-table">
-                    <!-- Price data will be added here dynamically -->
-                </tbody>
-            </table>
-        </div>
-    </section>
+        <!-- Right Section: Crypto Price Tracker -->
+        <section class="right-section">
+            <header class="hero-section text-center p-5 bg-primary text-white">
+                <h1>Crypto Price Tracker</h1>
+                <p>Select an exchange and trading pair to view real-time updates.</p>
+            </header>
+
+            <section id="crypto-tracker" class="crypto-section">
+                <h2 class="text-center">Track Prices</h2>
+                <div class="row">
+                    <div class="col-md-6 mx-auto">
+                        <form id="crypto-form">
+                            <div class="mb-3">
+                                <label for="exchange" class="form-label">Select Exchange</label>
+                                <select id="exchange" class="form-select">
+                                    <option value="binance">Binance</option>
+                                    <option value="kraken">Kraken</option>
+                                    <option value="bitfinex">Bitfinex</option>
+                                    <option value="okx">OKX</option>
+                                    <option value="kucoin">KuCoin</option>
+                                    <option value="gateio">Gate.io</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="trading-pair" class="form-label">Trading Pair (e.g., BTC/USDT)</label>
+                                <input type="text" class="form-control" id="trading-pair" placeholder="BTC/USDT" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Add to Table</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="mt-5">
+                    <h3 class="text-center">Price Updates</h3>
+                    <table class="table table-bordered text-center">
+                        <thead>
+                            <tr>
+                                <th>Exchange</th>
+                                <th>Trading Pair</th>
+                                <th>Bid</th>
+                                <th>Ask</th>
+                                <th>Last Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody id="price-table">
+                            <!-- Price data will be added here dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </section>
+    </div>
 
     <footer class="text-center py-4 bg-dark text-white">
         &copy; 2024 Your Name. All Rights Reserved.
@@ -127,11 +178,11 @@
             e.preventDefault();
             const exchange = document.getElementById('exchange').value;
             const tradingPair = document.getElementById('trading-pair').value.toUpperCase();
-            if (activePairs.has(`${exchange}-${tradingPair}`)) {
+            const rowId = `${exchange}-${tradingPair}`.replace('/', '-');
+            if (document.getElementById(rowId)) {
                 alert('This pair is already being tracked.');
                 return;
             }
-            const rowId = `${exchange}-${tradingPair}`.replace('/', '-');
             activePairs.add({ exchange, tradingPair, rowId });
             const newRow = document.createElement('tr');
             newRow.id = rowId;
