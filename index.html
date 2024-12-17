@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Accurate and reliable forecasting and crypto price tracking.">
-    <meta name="author" content="Your Name">
-    <title>Forecasting and Crypto Tracker</title>
+    <title>Crypto Price Tracker</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -17,50 +15,60 @@
     </style>
 </head>
 <body>
-    <header class="hero-section">
-        <div class="container">
-            <h1 class="display-4 text-center">Crypto Price Tracker</h1>
-        </div>
+
+    <header class="hero-section text-center p-5 bg-primary text-white">
+        <h1>Crypto Price Tracker</h1>
+        <p>Choose your platform and get real-time cryptocurrency prices.</p>
     </header>
 
     <section id="crypto-tracker" class="crypto-section container">
-        <h2 class="text-center">Track Cryptocurrency Prices</h2>
-        <form id="crypto-form" class="mt-4">
-            <div class="mb-3">
-                <label for="exchange" class="form-label">Exchange</label>
-                <select id="exchange" class="form-select">
-                    <option value="binance">Binance</option>
-                    <option value="kraken">Kraken</option>
-                </select>
+        <h2 class="text-center">Track Prices</h2>
+        <div class="row">
+            <div class="col-md-6 mx-auto">
+                <form id="crypto-form">
+                    <div class="mb-3">
+                        <label for="platform" class="form-label">Choose Platform</label>
+                        <select id="platform" class="form-select">
+                            <option value="coingecko">CoinGecko</option>
+                            <option value="binance">Binance</option>
+                            <option value="kraken">Kraken</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="trading-pair" class="form-label">Trading Pair (e.g., BTC/USDT)</label>
+                        <input type="text" class="form-control" id="trading-pair" placeholder="BTC/USDT" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Fetch Prices</button>
+                </form>
             </div>
-            <div class="mb-3">
-                <label for="trading-pair" class="form-label">Trading Pair (e.g., BTC/USDT)</label>
-                <input type="text" class="form-control" id="trading-pair" placeholder="BTC/USDT">
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Fetch Prices</button>
-        </form>
-        <div id="crypto-result" class="mt-5 text-center"></div>
+        </div>
+        <div id="crypto-result" class="mt-5 text-center">
+            <!-- Results will be displayed here -->
+        </div>
     </section>
 
-    <footer class="bg-dark text-white text-center py-3">
-        <p>&copy; 2024 Your Name or Company | All Rights Reserved.</p>
+    <footer class="text-center py-4 bg-dark text-white">
+        &copy; 2024 Your Name. All Rights Reserved.
     </footer>
 
     <script>
         document.getElementById('crypto-form').addEventListener('submit', function(e) {
             e.preventDefault();
 
-            const exchange = document.getElementById('exchange').value; // Exchange for display purposes
-            const tradingPair = document.getElementById('trading-pair').value;
-            const [base, quote] = tradingPair.split('/');
+            const platform = document.getElementById('platform').value;
+            const tradingPair = document.getElementById('trading-pair').value.toUpperCase().replace('/', '');
+            let fetchURL;
 
-            if (!base || !quote) {
-                document.getElementById('crypto-result').innerHTML = `<p class="text-danger">Invalid trading pair. Use format like BTC/USDT.</p>`;
-                return;
+            if (platform === 'coingecko') {
+                const [base, quote] = tradingPair.split('USDT');
+                fetchURL = `https://api.coingecko.com/api/v3/simple/price?ids=${base.toLowerCase()}&vs_currencies=${quote ? quote.toLowerCase() : 'usd'}`;
+            } else if (platform === 'binance') {
+                fetchURL = `https://api.binance.com/api/v3/ticker/price?symbol=${tradingPair}`;
+            } else if (platform === 'kraken') {
+                fetchURL = `https://api.kraken.com/0/public/Ticker?pair=${tradingPair}`;
             }
 
-            // Using CoinGecko API
-            fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${base.toLowerCase()}&vs_currencies=${quote.toLowerCase()}`)
+            fetch(fetchURL)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP error! Status: ${response.status}`);
@@ -68,20 +76,19 @@
                     return response.json();
                 })
                 .then(data => {
-                    if (data[base.toLowerCase()]) {
-                        const price = data[base.toLowerCase()][quote.toLowerCase()];
-                        document.getElementById('crypto-result').innerHTML = `
-                            <h3>Price Data</h3>
-                            <p><strong>Exchange:</strong> ${exchange}</p>
-                            <p><strong>Pair:</strong> ${tradingPair}</p>
-                            <p><strong>Price:</strong> ${price} ${quote.toUpperCase()}</p>
-                        `;
-                    } else {
-                        document.getElementById('crypto-result').innerHTML = `<p class="text-danger">Price data not found for ${tradingPair}.</p>`;
+                    let resultHTML = '<h3>Price Data</h3>';
+                    if (platform === 'coingecko') {
+                        const coinKey = Object.keys(data)[0];
+                        resultHTML += `<p><strong>Price:</strong> $${data[coinKey].usd}</p>`;
+                    } else if (platform === 'binance') {
+                        resultHTML += `<p><strong>Price:</strong> $${data.price}</p>`;
+                    } else if (platform === 'kraken') {
+                        const pairKey = Object.keys(data.result)[0];
+                        resultHTML += `<p><strong>Price:</strong> $${data.result[pairKey].c[0]}</p>`;
                     }
+                    document.getElementById('crypto-result').innerHTML = resultHTML;
                 })
                 .catch(error => {
-                    console.error(error);
                     document.getElementById('crypto-result').innerHTML = `<p class="text-danger">Failed to fetch data: ${error.message}</p>`;
                 });
         });
