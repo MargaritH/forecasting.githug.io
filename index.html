@@ -18,7 +18,7 @@
 
     <header class="hero-section text-center p-5 bg-primary text-white">
         <h1>Crypto Price Tracker</h1>
-        <p>Choose your platform and get real-time cryptocurrency prices.</p>
+        <p>Select an exchange and trading pair to view real-time updates.</p>
     </header>
 
     <section id="crypto-tracker" class="crypto-section container">
@@ -27,23 +27,41 @@
             <div class="col-md-6 mx-auto">
                 <form id="crypto-form">
                     <div class="mb-3">
-                        <label for="platform" class="form-label">Choose Platform</label>
-                        <select id="platform" class="form-select">
-                            <option value="coingecko">CoinGecko</option>
+                        <label for="exchange" class="form-label">Select Exchange</label>
+                        <select id="exchange" class="form-select">
                             <option value="binance">Binance</option>
                             <option value="kraken">Kraken</option>
+                            <option value="bitfinex">Bitfinex</option>
+                            <option value="okx">OKX</option>
+                            <option value="kucoin">KuCoin</option>
+                            <option value="gateio">Gate.io</option>
                         </select>
                     </div>
                     <div class="mb-3">
                         <label for="trading-pair" class="form-label">Trading Pair (e.g., BTC/USDT)</label>
                         <input type="text" class="form-control" id="trading-pair" placeholder="BTC/USDT" required>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">Fetch Prices</button>
+                    <button type="submit" class="btn btn-primary w-100">Add to Table</button>
                 </form>
             </div>
         </div>
-        <div id="crypto-result" class="mt-5 text-center">
-            <!-- Results will be displayed here -->
+
+        <div class="mt-5">
+            <h3 class="text-center">Price Updates</h3>
+            <table class="table table-bordered text-center">
+                <thead>
+                    <tr>
+                        <th>Exchange</th>
+                        <th>Trading Pair</th>
+                        <th>Bid</th>
+                        <th>Ask</th>
+                        <th>Last Updated</th>
+                    </tr>
+                </thead>
+                <tbody id="price-table">
+                    <!-- Price data will be added here dynamically -->
+                </tbody>
+            </table>
         </div>
     </section>
 
@@ -52,46 +70,82 @@
     </footer>
 
     <script>
-        document.getElementById('crypto-form').addEventListener('submit', function(e) {
+        const priceTable = document.getElementById('price-table');
+        const form = document.getElementById('crypto-form');
+        const exchanges = {
+            binance: 'https://api.binance.com/api/v3/ticker/bookTicker',
+            kraken: 'https://api.kraken.com/0/public/Ticker',
+            bitfinex: 'https://api.bitfinex.com/v2/tickers',
+            okx: 'https://www.okx.com/api/v5/market/ticker',
+            kucoin: 'https://api.kucoin.com/api/v1/market/orderbook/level1',
+            gateio: 'https://api.gateio.ws/api/v4/spot/tickers'
+        };
+
+        const activePairs = new Set();
+
+        function fetchPrices() {
+            activePairs.forEach(async (pairData) => {
+                const { exchange, tradingPair, rowId } = pairData;
+                const endpoint = exchanges[exchange];
+                try {
+                    let bid = 'N/A', ask = 'N/A';
+                    if (exchange === 'binance') {
+                        const response = await fetch(`${endpoint}?symbol=${tradingPair}`);
+                        const data = await response.json();
+                        bid = data.bidPrice;
+                        ask = data.askPrice;
+                    } else if (exchange === 'kraken') {
+                        const response = await fetch(`${endpoint}?pair=${tradingPair}`);
+                        const data = await response.json();
+                        const tickerData = data.result[Object.keys(data.result)[0]];
+                        bid = tickerData.b[0];
+                        ask = tickerData.a[0];
+                    } else if (exchange === 'bitfinex') {
+                        const response = await fetch(`${endpoint}?symbols=t${tradingPair}`);
+                        const data = await response.json();
+                        const tickerData = data[0];
+                        bid = tickerData[1];
+                        ask = tickerData[3];
+                    }
+                    // Add additional APIs (OKX, KuCoin, Gate.io) here as needed
+                    const now = new Date().toLocaleTimeString();
+                    const row = document.getElementById(rowId);
+                    row.innerHTML = `
+                        <td>${exchange}</td>
+                        <td>${tradingPair}</td>
+                        <td>${bid}</td>
+                        <td>${ask}</td>
+                        <td>${now}</td>
+                    `;
+                } catch (error) {
+                    console.error(`Error fetching price for ${exchange} ${tradingPair}:`, error);
+                }
+            });
+        }
+
+        form.addEventListener('submit', (e) => {
             e.preventDefault();
-
-            const platform = document.getElementById('platform').value;
-            const tradingPair = document.getElementById('trading-pair').value.toUpperCase().replace('/', '');
-            let fetchURL;
-
-            if (platform === 'coingecko') {
-                const [base, quote] = tradingPair.split('USDT');
-                fetchURL = `https://api.coingecko.com/api/v3/simple/price?ids=${base.toLowerCase()}&vs_currencies=${quote ? quote.toLowerCase() : 'usd'}`;
-            } else if (platform === 'binance') {
-                fetchURL = `https://api.binance.com/api/v3/ticker/price?symbol=${tradingPair}`;
-            } else if (platform === 'kraken') {
-                fetchURL = `https://api.kraken.com/0/public/Ticker?pair=${tradingPair}`;
+            const exchange = document.getElementById('exchange').value;
+            const tradingPair = document.getElementById('trading-pair').value.toUpperCase();
+            if (activePairs.has(`${exchange}-${tradingPair}`)) {
+                alert('This pair is already being tracked.');
+                return;
             }
-
-            fetch(fetchURL)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    let resultHTML = '<h3>Price Data</h3>';
-                    if (platform === 'coingecko') {
-                        const coinKey = Object.keys(data)[0];
-                        resultHTML += `<p><strong>Price:</strong> $${data[coinKey].usd}</p>`;
-                    } else if (platform === 'binance') {
-                        resultHTML += `<p><strong>Price:</strong> $${data.price}</p>`;
-                    } else if (platform === 'kraken') {
-                        const pairKey = Object.keys(data.result)[0];
-                        resultHTML += `<p><strong>Price:</strong> $${data.result[pairKey].c[0]}</p>`;
-                    }
-                    document.getElementById('crypto-result').innerHTML = resultHTML;
-                })
-                .catch(error => {
-                    document.getElementById('crypto-result').innerHTML = `<p class="text-danger">Failed to fetch data: ${error.message}</p>`;
-                });
+            const rowId = `${exchange}-${tradingPair}`.replace('/', '-');
+            activePairs.add({ exchange, tradingPair, rowId });
+            const newRow = document.createElement('tr');
+            newRow.id = rowId;
+            newRow.innerHTML = `
+                <td>${exchange}</td>
+                <td>${tradingPair}</td>
+                <td>Loading...</td>
+                <td>Loading...</td>
+                <td>Loading...</td>
+            `;
+            priceTable.appendChild(newRow);
         });
+
+        setInterval(fetchPrices, 5000); // Update prices every 5 seconds
     </script>
 </body>
 </html>
